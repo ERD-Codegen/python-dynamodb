@@ -15,29 +15,29 @@ def create_user(event, context):
     body = event["body"]
     # input validation
     if "user" not in body:
-        raise Exception("User must be specified.", 422)
+        return envelop("User must be specified.", 422)
     user = body["user"]
     if "username" not in user:
         logging.error("Validation Failed")
-        raise Exception("Username must be specified.", 422)
+        return envelop("Username must be specified.", 422)
     if "email" not in user:
         logging.error("Validation Failed")
-        raise Exception("Email must be specified.", 422)
+        return envelop("Email must be specified.", 422)
     if "password" not in user:
         logging.error("Validation Failed")
-        raise Exception("Password must be specified.", 422)
+        return envelop("Password must be specified.", 422)
 
     # Verify username is not taken
     user_exists = get_user_by_username(user["username"])
     if user_exists:
         logging.error("Validation Failed")
-        raise Exception(f"Username already taken: {user['username']}", 422)
+        return envelop(f"Username already taken: {user['username']}", 422)
 
     # Verify email is not taken
     email_exists = get_user_by_email(user["email"])
     if email_exists["Count"]:
         logging.error("Validation Failed")
-        raise Exception(f"Email already taken: {user['email']}", 422)
+        return envelop(f"Email already taken: {user['email']}", 422)
 
     # Add new entry to usersTable
     encryptedPassword = bcrypt.hashpw(user["password"].encode(), bcrypt.gensalt())
@@ -93,25 +93,25 @@ def login_user(event, context):
     # input validation
     if "user" not in body:
         logging.error("Validation Failed")
-        raise Exception("User must be specified.", 422)
+        return envelop("User must be specified.", 422)
     user = body["user"]
     if "email" not in user:
         logging.error("Validation Failed")
-        raise Exception("Email must be specified.", 422)
+        return envelop("Email must be specified.", 422)
     if "password" not in user:
         logging.error("Validation Failed")
-        raise Exception("Password must be specified.", 422)
+        return envelop("Password must be specified.", 422)
 
     # Get user with this email
     user_with_this_email = get_user_by_email(user["email"])
-    if user_with_this_email["Count"] != 1:
-        raise Exception(f"Email not fount: {user['email']}.", 422)
+    if user_with_this_email["Count"] == 0:
+        return envelop(f"Email not found: {user['email']}.", 422)
 
     # Check password
     if not bcrypt.checkpw(
         user["password"].encode(), bytes(user_with_this_email["Items"][0]["password"])
     ):
-        raise Exception("Wrong password.", 422)
+        return envelop("Wrong password.", 422)
 
     # Return user with jwt token
     authenticated_user = {
@@ -129,7 +129,7 @@ def login_user(event, context):
 def get_user(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if authenticated_user is None:
-        raise Exception("Token not present or invalid.", 422)
+        return envelop("Token not present or invalid.", 422)
     user = {
         "email": authenticated_user["email"],
         "token": get_token_from_event(event),
@@ -144,19 +144,19 @@ def get_user(event, context):
 def update_user(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if not authenticated_user:
-        raise Exception("Token not present or invalid.", 422)
+        return envelop("Token not present or invalid.", 422)
     updated_user = authenticated_user
 
     if "user" not in event["body"]:
         logging.error("Validation Failed")
-        raise Exception("User must be specified.", 422)
+        return envelop("User must be specified.", 422)
     user = event["body"]["user"]
 
     if "email" in user:
         # Verify email is not taken
         user_with_this_email = get_user_by_email(user["email"])
         if user_with_this_email["Count"] != 0:
-            return Exception(f"Email already taken: {user['email']}", 422)
+            return envelop(f"Email already taken: {user['email']}", 422)
         updated_user["email"] = user["email"]
 
     if "password" in user:
@@ -184,7 +184,7 @@ def get_profile(event, context):
     profile = get_profile_by_username(username, authenticated_user)
 
     if profile is None:
-        raise Exception(f"User not found: {username}", 422)
+        return envelop(f"User not found: {username}", 422)
 
     return envelop({"profile": profile})
 
@@ -192,7 +192,7 @@ def get_profile(event, context):
 def follow(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if authenticated_user is None:
-        raise Exception("Token not present or invalid.", 422)
+        return envelop("Token not present or invalid.", 422)
 
     username = event["pathParameters"]["username"]
     user = get_user_by_username(username)
@@ -252,7 +252,7 @@ def follow(event, context):
 def get_followed_users(a_username):
     user = users_table.get_item(Key={"username": a_username})
     if "Item" not in user:
-        raise Exception("user not found", 422)
+        return envelop("User not found", 422)
     user = user["Item"]
     return user.get("following", [])
 

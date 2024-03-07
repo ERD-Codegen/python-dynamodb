@@ -74,12 +74,13 @@ def test_login_user(users_table, user1):
 def test_invalid_login_user(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    user.create_user(event, {})
 
-    eventbody = {"user": {"email": "johndoe@gmail.com", "password": "invalidpassword"}}
-    event = {"body": eventbody}
-    with pytest.raises(Exception, match="Wrong password"):
-        user.login_user(event, {})
+    eventbody2 = {"user": {"email": "johndoe@gmail.com", "password": "invalidpassword"}}
+    event2 = {"body": eventbody2}
+    ret = user.login_user(event2, {})
+    assert ret["statusCode"] == 422
+    assert ret["body"] == {"errors": {"body": ["Wrong password."]}}
 
 
 def test_get_user(users_table, user1):
@@ -103,8 +104,9 @@ def test_get_user_invalid_token(users_table, user1):
             "Authorization": "Bearer " + ret["body"]["user"]["token"] + "invalid"
         }
     }
-    with pytest.raises(Exception, match="Token not present or invalid."):
-        ret = user.get_user(event2, {})
+    ret = user.get_user(event2, {})
+    assert ret["statusCode"] == 422
+    assert ret["body"] == {"errors": {"body": ["Token not present or invalid."]}}
 
 
 def test_update_user(users_table, user1):
@@ -153,8 +155,9 @@ def test_get_profile_nonexisting(users_table, user1):
     created = user.create_user(event, {})
 
     event2 = {"pathParameters": {"username": "nonexisting"}}
-    with pytest.raises(Exception, match="User not found: nonexisting"):
-        ret = user.get_profile(event2, {})
+    ret = user.get_profile(event2, {})
+    assert ret["statusCode"] == 422
+    assert ret["body"] == {"errors": {"body": ["User not found: nonexisting"]}}
 
 
 def test_follow_user(users_table, user1, user2):
