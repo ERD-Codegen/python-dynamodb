@@ -88,12 +88,13 @@ def get_user_by_email(a_email):
 
 # login user
 def login_user(event, context):
-    user = event["user"]
+    body = event["body"]
 
     # input validation
-    if not user:
+    if "user" not in body:
         logging.error("Validation Failed")
         raise Exception("User must be specified.", 422)
+    user = body["user"]
     if "email" not in user:
         logging.error("Validation Failed")
         raise Exception("Email must be specified.", 422)

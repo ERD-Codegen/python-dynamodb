@@ -62,7 +62,8 @@ def test_login_user(users_table, user1):
     event = {"body": eventbody}
     ret = user.create_user(event, {})
 
-    event = {"user": {"email": "johndoe@gmail.com", "password": "password123"}}
+    eventbody = {"user": {"email": "johndoe@gmail.com", "password": "password123"}}
+    event = {"body": eventbody}
     ret = user.login_user(event, {})
     assert ret["statusCode"] == 200
     assert ret["body"]["user"]["username"] == "john doe"
@@ -75,7 +76,8 @@ def test_invalid_login_user(users_table, user1):
     event = {"body": eventbody}
     ret = user.create_user(event, {})
 
-    event = {"user": {"email": "johndoe@gmail.com", "password": "password1234"}}
+    eventbody = {"user": {"email": "johndoe@gmail.com", "password": "invalidpassword"}}
+    event = {"body": eventbody}
     with pytest.raises(Exception, match="Wrong password"):
         user.login_user(event, {})
 
@@ -114,7 +116,6 @@ def test_update_user(users_table, user1):
         "headers": {"Authorization": "Bearer " + created["body"]["user"]["token"]},
         "body": {
             "user": {
-                "username": "john doe",
                 "email": "altered@gmail.com",
                 "password": "altered123",
                 "bio": "I love python and lambda!",
