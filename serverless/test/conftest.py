@@ -54,21 +54,31 @@ def articles_table(dynamodb_client):
     attribute_definitions = [
         {"AttributeName": "slug", "AttributeType": "S"},
         {"AttributeName": "dummy", "AttributeType": "S"},
-        {"AttributeName": "updatedAt", "AttributeType": "N"},
+        {"AttributeName": "createdAt", "AttributeType": "N"},
+        {"AttributeName": "author", "AttributeType": "S"},
     ]
 
     key_schema = [{"AttributeName": "slug", "KeyType": "HASH"}]
 
     global_secondary_indexes = [
         {
-            "IndexName": "updatedAt",
+            "IndexName": "createdAt",
             "KeySchema": [
                 {"AttributeName": "dummy", "KeyType": "HASH"},
-                {"AttributeName": "updatedAt", "KeyType": "RANGE"},
+                {"AttributeName": "createdAt", "KeyType": "RANGE"},
             ],
             "Projection": {"ProjectionType": "ALL"},
             "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
-        }
+        },
+        {
+            "IndexName": "author",
+            "KeySchema": [
+                {"AttributeName": "author", "KeyType": "HASH"},
+                {"AttributeName": "createdAt", "KeyType": "RANGE"},
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+            "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        },
     ]
 
     # Create the table

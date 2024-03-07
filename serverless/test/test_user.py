@@ -27,7 +27,7 @@ def test_create_user(users_table, user1):
 
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    ret = user.create_user(event)
     assert ret["body"]["user"]["username"] == "john doe"
     print(ret)
 
@@ -35,11 +35,11 @@ def test_create_user(users_table, user1):
 def test_login_user(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    ret = user.create_user(event)
 
     eventbody = {"user": {"email": "johndoe@gmail.com", "password": "password123"}}
     event = {"body": eventbody}
-    ret = user.login_user(event, {})
+    ret = user.login_user(event)
     assert ret["statusCode"] == 200
     assert ret["body"]["user"]["username"] == "john doe"
     assert ret["body"]["user"]["email"] == "johndoe@gmail.com"
@@ -49,7 +49,7 @@ def test_login_user(users_table, user1):
 def test_invalid_login_user(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    user.create_user(event, {})
+    user.create_user(event)
 
     eventbody2 = {"user": {"email": "johndoe@gmail.com", "password": "invalidpassword"}}
     event2 = {"body": eventbody2}
@@ -61,7 +61,7 @@ def test_invalid_login_user(users_table, user1):
 def test_get_user(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    ret = user.create_user(event)
 
     event2 = {"headers": {"Authorization": "Bearer " + ret["body"]["user"]["token"]}}
     ret = user.get_user(event2, {})
@@ -72,7 +72,7 @@ def test_get_user(users_table, user1):
 def test_get_user_invalid_token(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    ret = user.create_user(event)
 
     event2 = {
         "headers": {
@@ -87,7 +87,7 @@ def test_get_user_invalid_token(users_table, user1):
 def test_update_user(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    created = user.create_user(event, {})
+    created = user.create_user(event)
 
     event2 = {
         "headers": {"Authorization": "Bearer " + created["body"]["user"]["token"]},
@@ -115,7 +115,7 @@ def test_update_user(users_table, user1):
 def test_get_profile(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    created = user.create_user(event, {})
+    created = user.create_user(event)
 
     event2 = {"pathParameters": {"username": "john doe"}}
     ret = user.get_profile(event2, {})
@@ -127,7 +127,7 @@ def test_get_profile(users_table, user1):
 def test_get_profile_nonexisting(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    created = user.create_user(event, {})
+    created = user.create_user(event)
 
     event2 = {"pathParameters": {"username": "nonexisting"}}
     ret = user.get_profile(event2, {})
@@ -138,11 +138,11 @@ def test_get_profile_nonexisting(users_table, user1):
 def test_follow_user(users_table, user1, user2):
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    created1 = user.create_user(event, {})
+    created1 = user.create_user(event)
 
     eventbody = {"user": user2}
     event = {"body": eventbody}
-    created2 = user.create_user(event, {})
+    created2 = user.create_user(event)
 
     event2 = {
         "headers": {"Authorization": "Bearer " + created2["body"]["user"]["token"]},

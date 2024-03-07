@@ -33,7 +33,7 @@ def user1Token(users_table):
     }
     eventbody = {"user": user1}
     event = {"body": eventbody}
-    ret = user.create_user(event, {})
+    ret = user.create_user(event)
     return ret["body"]["user"]["token"]
 
 
@@ -42,7 +42,7 @@ def test_create_article(articles_table, article1, user1Token):
     headers = {"Authorization": f"Token {user1Token}"}
     event = {"headers": headers, "body": eventbody}
 
-    ret = article.create_article(event, {})
+    ret = article.create_article(event)
     assert ret["statusCode"] == 200
     assert ret["body"]["article"]["title"] == "title1"
 
@@ -51,11 +51,12 @@ def test_get_article(articles_table, article1, user1Token):
     eventbody = {"article": article1}
     headers = {"Authorization": f"Token {user1Token}"}
     event = {"headers": headers, "body": eventbody}
-    ret = article.create_article(event, {})
+    ret = article.create_article(event)
 
     slug = ret["body"]["article"]["slug"]
     event = {"pathParameters": {"slug": slug}}
-    ret = article.get_article(event, {})
+    ret = article.get_article(event)
+    logging.info(ret)
     assert ret["statusCode"] == 200
     assert ret["body"]["article"]["title"] == "title1"
     assert ret["body"]["article"]["slug"] == slug
@@ -71,7 +72,7 @@ def test_update_article(articles_table, article1, user1Token):
     eventbody = {"article": article1}
     headers = {"Authorization": f"Token {user1Token}"}
     event = {"headers": headers, "body": eventbody}
-    ret = article.create_article(event, {})
+    ret = article.create_article(event)
 
     slug = ret["body"]["article"]["slug"]
     event = {
@@ -85,7 +86,7 @@ def test_update_article(articles_table, article1, user1Token):
             }
         },
     }
-    ret = article.update_article(event, {})
+    ret = article.update_article(event)
     assert ret["statusCode"] == 200
     assert ret["body"]["article"]["title"] == "title1 altered"
     assert ret["body"]["article"]["description"] == "description1 altered"
@@ -103,13 +104,57 @@ def test_delete_article(articles_table, article1, user1Token):
     eventbody = {"article": article1}
     headers = {"Authorization": f"Token {user1Token}"}
     event = {"headers": headers, "body": eventbody}
-    ret = article.create_article(event, {})
+    ret = article.create_article(event)
 
     slug = ret["body"]["article"]["slug"]
     event = {
         "headers": headers,
         "pathParameters": {"slug": slug},
     }
-    article.delete_article(event, {})
-    ret = article.get_article(event, {})
+    article.delete_article(event)
+    ret = article.get_article(event)
     assert ret["statusCode"] == 422
+
+
+def test_favorite_article(articles_table, article1, user1Token):
+    eventbody = {"article": article1}
+    headers = {"Authorization": f"Token {user1Token}"}
+    event = {"headers": headers, "body": eventbody}
+    ret = article.create_article(event)
+
+    slug = ret["body"]["article"]["slug"]
+    event = {
+        "httpMethod": "POST",
+        "headers": headers,
+        "pathParameters": {"slug": slug},
+    }
+    article.favorite_article(event)
+    event = {
+        "headers": headers,
+        "pathParameters": {"slug": slug},
+    }
+    ret = article.get_article(event)
+    assert ret["body"]["article"]["favorited"] == True
+    assert ret["body"]["article"]["favoritesCount"] == 1
+
+
+def test_list_articles(articles_table, article1, article2, user1Token):
+    eventbody = {"article": article2}
+    headers = {"Authorization": f"Token {user1Token}"}
+    event = {"headers": headers, "body": eventbody}
+    ret = article.create_article(event)
+
+    eventbody = {"article": article1}
+    event = {"headers": headers, "body": eventbody}
+    ret = article.create_article(event)
+
+    queryStringParameters = {"limit": 1, "offset": 1}
+    event = {
+        "headers": headers,
+        "queryStringParameters": queryStringParameters,
+    }
+    ret = article.list_articles(event)
+    assert ret["statusCode"] == 200
+    assert len(ret["body"]["articles"]) == 1
+    article_ret = ret["body"]["articles"][0]
+    assert article_ret["title"] == "title2"
