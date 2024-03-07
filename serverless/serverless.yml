@@ -127,6 +127,76 @@ resources:
             ProvisionedThroughput:
               ReadCapacityUnits: 10
               WriteCapacityUnits: 5
+    
+    ArticlesDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: slug
+            AttributeType: S
+          -
+            AttributeName: dummy
+            AttributeType: S
+          -
+            AttributeName: updatedAt
+            AttributeType: N
+        KeySchema:
+          -
+            AttributeName: slug
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_NAMESPACE}-articles
+        GlobalSecondaryIndexes:
+          -
+            IndexName: updatedAt
+            KeySchema:
+              -
+                AttributeName: dummy
+                KeyType: HASH
+              -
+                AttributeName: updatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+
+    CommentsDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+          -
+            AttributeName: slug
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DYNAMODB_NAMESPACE}-comments
+        GlobalSecondaryIndexes:
+          -
+            IndexName: article
+            KeySchema:
+              -
+                AttributeName: slug
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
 
 package:
   exclude:
