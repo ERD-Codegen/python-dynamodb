@@ -6,31 +6,6 @@ from src import user
 
 
 @pytest.fixture
-def users_table(dynamodb_client):
-    table = dynamodb_client.create_table(
-        TableName="dev-users",
-        KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],
-        AttributeDefinitions=[
-            {"AttributeName": "username", "AttributeType": "S"},
-            {"AttributeName": "email", "AttributeType": "S"},
-        ],
-        ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
-        GlobalSecondaryIndexes=[
-            {
-                "IndexName": "email",
-                "KeySchema": [{"AttributeName": "email", "KeyType": "HASH"}],
-                "Projection": {"ProjectionType": "ALL"},
-                "ProvisionedThroughput": {
-                    "ReadCapacityUnits": 1,
-                    "WriteCapacityUnits": 1,
-                },
-            }
-        ],
-    )
-    yield table
-
-
-@pytest.fixture
 def user1():
     return {
         "username": "john doe",

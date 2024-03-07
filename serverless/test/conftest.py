@@ -22,3 +22,61 @@ def dynamodb_client(aws_credentials):
     with mock_aws():
         dynamodb = boto3.resource("dynamodb", region_name="ap-northeast-2")
         yield dynamodb
+
+
+@pytest.fixture
+def users_table(dynamodb_client):
+    table = dynamodb_client.create_table(
+        TableName="dev-users",
+        KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],
+        AttributeDefinitions=[
+            {"AttributeName": "username", "AttributeType": "S"},
+            {"AttributeName": "email", "AttributeType": "S"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "email",
+                "KeySchema": [{"AttributeName": "email", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1,
+                },
+            }
+        ],
+    )
+    yield table
+
+
+@pytest.fixture
+def articles_table(dynamodb_client):
+    attribute_definitions = [
+        {"AttributeName": "slug", "AttributeType": "S"},
+        {"AttributeName": "dummy", "AttributeType": "S"},
+        {"AttributeName": "updatedAt", "AttributeType": "N"},
+    ]
+
+    key_schema = [{"AttributeName": "slug", "KeyType": "HASH"}]
+
+    global_secondary_indexes = [
+        {
+            "IndexName": "updatedAt",
+            "KeySchema": [
+                {"AttributeName": "dummy", "KeyType": "HASH"},
+                {"AttributeName": "updatedAt", "KeyType": "RANGE"},
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+            "ProvisionedThroughput": {"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        }
+    ]
+
+    # Create the table
+    table = dynamodb_client.create_table(
+        TableName="dev-articles",
+        AttributeDefinitions=attribute_definitions,
+        KeySchema=key_schema,
+        ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        GlobalSecondaryIndexes=global_secondary_indexes,
+    )
+    yield table

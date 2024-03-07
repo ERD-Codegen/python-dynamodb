@@ -5,8 +5,8 @@ import uuid
 from datetime import datetime
 from slugify import slugify
 from boto3.dynamodb.conditions import Key, Attr
-import user
-from util import *
+import src.user as user
+from src.util import *
 
 dynamodb = boto3.resource("dynamodb", region_name="ap-northeast-2")
 articles_table = dynamodb.Table("dev-articles")
@@ -18,7 +18,7 @@ def create_article(event, context):
         return envelop("Must be logged in", 422)
 
     body = event["body"]
-    if article not in body:
+    if "article" not in body:
         return envelop("Article must be specified", 422)
 
     article = body["article"]
@@ -53,7 +53,7 @@ def create_article(event, context):
         "username": authenticatedUser["username"],
         "bio": authenticatedUser.get("bio", ""),
         "image": authenticatedUser.get("image", ""),
-        following: False,
+        "following": False,
     }
 
     return envelop({"article": item})
@@ -77,7 +77,7 @@ def transform_retrieved_article(article, authenticated_user):
     del article["dummy"]
     article["tagList"] = article.get("tagList", [])
     article["favoritesCount"] = article.get("favoritesCount", 0)
-    article["favorited"] = false
+    article["favorited"] = False
     if "favoritedBy" in article:
         if authenticated_user:
             article["favorited"] = (
@@ -87,7 +87,7 @@ def transform_retrieved_article(article, authenticated_user):
     article["author"] = user.get_profile_by_username(
         article["author"], authenticated_user
     )
-    return article
+    return {"article": article}
 
 
 def update_article(event, context):
@@ -126,9 +126,7 @@ def update_article(event, context):
     article["updatedAt"] = str(datetime.utcnow().timestamp())
     articles_table.put_item(Item=article)
 
-    return envelop(
-        {"article": transform_retrieved_article(article, authenticated_user)}
-    )
+    return envelop(transform_retrieved_article(article, authenticated_user))
 
 
 def delete_article(event, context):
