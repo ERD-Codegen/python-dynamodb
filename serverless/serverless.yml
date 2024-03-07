@@ -31,6 +31,19 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/*"
+      
+  layers:
+    - { "Ref": "CommonPackagesLambdaLayer" }
+
+layers:
+  commonPackages:
+    path: commonPackages
+    name: ${opt:stage, "dev"}-commonPackages
+    compatibleRuntimes:
+      - python3.9
+    compatibleArchitectures:
+      - x86_64
+
 
 functions:
   create_user:
@@ -101,8 +114,8 @@ resources:
             AttributeName: username
             KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 5
         TableName: ${self:provider.environment.DYNAMODB_NAMESPACE}-users
         GlobalSecondaryIndexes:
           - IndexName: email
@@ -112,6 +125,10 @@ resources:
             Projection:
               ProjectionType: ALL
             ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
+              ReadCapacityUnits: 10
+              WriteCapacityUnits: 5
 
+package:
+  exclude:
+    - test/**
+    - commonPackages/**
