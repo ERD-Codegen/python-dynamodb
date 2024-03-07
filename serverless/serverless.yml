@@ -137,11 +137,14 @@ resources:
             AttributeName: slug
             AttributeType: S
           -
-            AttributeName: dummy
+            AttributeName: author
             AttributeType: S
           -
-            AttributeName: updatedAt
+            AttributeName: createdAt
             AttributeType: N
+          - 
+            AttributeName: dummy
+            AttributeType: S
         KeySchema:
           -
             AttributeName: slug
@@ -152,19 +155,32 @@ resources:
         TableName: ${self:provider.environment.DYNAMODB_NAMESPACE}-articles
         GlobalSecondaryIndexes:
           -
-            IndexName: updatedAt
+            IndexName: createdAt
             KeySchema:
               -
                 AttributeName: dummy
                 KeyType: HASH
               -
-                AttributeName: updatedAt
+                AttributeName: createdAt
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
             ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
+          -
+            IndexName: author
+            KeySchema:
+              - AttributeName: author
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+              
 
     CommentsDynamoDBTable:
       Type: 'AWS::DynamoDB::Table'

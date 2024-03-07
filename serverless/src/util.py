@@ -8,7 +8,6 @@ def envelop(content, statusCode=200):
     if statusCode == 200:
         body = content
     else:
-        logging.error(content)
         body = {"errors": {"body": [content]}}
 
     response = {
