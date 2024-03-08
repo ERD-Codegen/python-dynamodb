@@ -1,4 +1,5 @@
 import logging
+import json
 
 JWT_SECRET_KEY = "sample_secret_key"
 JWT_ALGORITHM = "HS256"
@@ -6,9 +7,9 @@ JWT_ALGORITHM = "HS256"
 
 def envelop(content, statusCode=200):
     if statusCode == 200:
-        body = content
+        body = json.dumps(content, default=int)
     else:
-        body = {"errors": {"body": [content]}}
+        body = json.dumps({"errors": {"body": [content]}})
         logging.error(body)
 
     response = {

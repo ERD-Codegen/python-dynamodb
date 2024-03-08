@@ -17,7 +17,7 @@ def create(event, context):
     if authenticatedUser is None:
         return envelop("Must be logged in", 422)
 
-    body = event["body"]
+    body = json.loads(event["body"])
     if "comment" not in body:
         return envelop("Comment must be specified", 422)
 
@@ -31,6 +31,7 @@ def create(event, context):
         return envelop(f"Article not found", 422)
 
     timestamp = int(datetime.utcnow().timestamp())
+    timeformated = datetime.utcfromtimestamp(timestamp).isoformat() + ".000Z"
     comment = {
         "id": str(uuid.uuid4()),
         "slug": slug,
@@ -40,6 +41,8 @@ def create(event, context):
         "author": authenticatedUser["username"],
     }
     comments_table.put_item(Item=comment)
+    comment["createdAt"] = timeformated
+    comment["updatedAt"] = timeformated
     comment["author"] = {
         "username": authenticatedUser["username"],
         "bio": authenticatedUser.get("bio", ""),
@@ -66,6 +69,12 @@ def get(event, context):
     for comment in comments:
         comment["author"] = User.get_profile_by_username(
             comment["author"], authenticated_user
+        )
+        comment["createdAt"] = (
+            datetime.utcfromtimestamp(comment["createdAt"]).isoformat() + ".000Z"
+        )
+        comment["updatedAt"] = (
+            datetime.utcfromtimestamp(comment["updatedAt"]).isoformat() + ".000Z"
         )
     return envelop({"comments": comments})
 

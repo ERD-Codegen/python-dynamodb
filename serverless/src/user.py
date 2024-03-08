@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import jwt
 import bcrypt
 from src.util import *
+import json
 
 dynamodb = boto3.resource("dynamodb", region_name="ap-northeast-2")
 users_table = dynamodb.Table("dev-users")
@@ -12,7 +13,7 @@ users_table = dynamodb.Table("dev-users")
 
 # create user
 def create_user(event, context):
-    body = event["body"]
+    body = json.loads(event["body"])
     # input validation
     if "user" not in body:
         return envelop("User must be specified.", 422)
@@ -88,7 +89,7 @@ def get_user_by_email(a_email):
 
 # login user
 def login_user(event, context):
-    body = event["body"]
+    body = json.loads(event["body"])
 
     # input validation
     if "user" not in body:
@@ -146,11 +147,12 @@ def update_user(event, context):
     if not authenticated_user:
         return envelop("Token not present or invalid.", 422)
     updated_user = authenticated_user
+    body = json.loads(event["body"])
 
-    if "user" not in event["body"]:
+    if "user" not in body:
         logging.error("Validation Failed")
         return envelop("User must be specified.", 422)
-    user = event["body"]["user"]
+    user = body["user"]
 
     if "email" in user:
         # Verify email is not taken
@@ -271,6 +273,8 @@ def get_profile_by_username(a_username, a_authenticated_user):
         "image": user.get("image", ""),
         "following": False,
     }
+    if profile["image"] == "":
+        del profile["image"]
 
     # If user is authenticated, set following bit
     if "followers" in user and a_authenticated_user:

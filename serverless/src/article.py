@@ -17,7 +17,7 @@ def create_article(event, context):
     if authenticatedUser is None:
         return envelop("Must be logged in", 422)
 
-    body = event["body"]
+    body = json.loads(event["body"])
     if "article" not in body:
         return envelop("Article must be specified", 422)
 
@@ -27,6 +27,7 @@ def create_article(event, context):
             return envelop(f"{field} must be specified", 422)
 
     timestamp = int(datetime.utcnow().timestamp())
+    timeformated = datetime.fromtimestamp(timestamp).isoformat() + ".000Z"
     slug = slugify(article_val["title"]) + "-" + str(uuid.uuid4())[:8]
 
     item = {
@@ -48,6 +49,8 @@ def create_article(event, context):
 
     del item["dummy"]
     item["tagList"] = article_val.get("tagList", [])
+    item["createdAt"] = timeformated
+    item["updatedAt"] = timeformated
     item["favorited"] = False
     item["favoritesCount"] = 0
     item["author"] = {
@@ -88,6 +91,12 @@ def transform_retrieved_article(article, authenticated_user):
     article["tagList"] = article.get("tagList", [])
     article["favoritesCount"] = article.get("favoritesCount", 0)
     article["favorited"] = False
+    article["createdAt"] = (
+        datetime.fromtimestamp(article["createdAt"]).isoformat() + ".000Z"
+    )
+    article["updatedAt"] = (
+        datetime.fromtimestamp(article["updatedAt"]).isoformat() + ".000Z"
+    )
     if "favoritedBy" in article:
         if authenticated_user:
             article["favorited"] = (
@@ -102,7 +111,7 @@ def transform_retrieved_article(article, authenticated_user):
 
 def update_article(event, context):
 
-    body = event["body"]
+    body = json.loads(event["body"])
     if "article" not in body:
         return envelop("Article must be specified", 422)
     article_mutation = body["article"]
@@ -198,8 +207,16 @@ def favorite_article(event, context):
 def list_articles(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     params = event.get("queryStringParameters", {})
-    limit = int(params.get("limit", 20))
-    offset = int(params.get("offset", 0))
+    if params == None:
+        params = {}
+    limit = params.get("limit", 20)
+    if type(limit) != int:
+        limit = 20
+    limit = int(limit)
+    offset = params.get("offset", 0)
+    if type(offset) != int:
+        offset = 0
+    offset = int(offset)
     if sum(item in params for item in ["tag", "author", "favorited"]) > 1:
         return envelop("Use only one of tag, author, or favorited", 422)
     queryParams = {
@@ -240,9 +257,11 @@ def get_feed(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Must be logged in", 422)
-
-    limit = int(event.get("queryStringParameters", {}).get("limit", 20))
-    offset = int(event.get("queryStringParameters", {}).get("offset", 0))
+    params = event.get("queryStringParameters", {})
+    if params is None:
+        params = {}
+    limit = int(params.get("limit", 20))
+    offset = int(params.get("offset", 0))
     follow_list = user.get_followed_users(authenticated_user["username"])
     articles_ret = []
     for username in follow_list:
