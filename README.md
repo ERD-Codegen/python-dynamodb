@@ -13,20 +13,20 @@ We've gone to great lengths to adhere to the **[Python + AWS Lambda + DynamoDB]*
 For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
 # How it works
+![cloud_architecture](cloud_architecture.png)
 - All informations needed for AWS cloud deployment are defined in `serverless/serverless.yml` and _serverless framework_ will automatically create AWS cloudformation stack.
 - Used Moto and pytest to mock cloud environment and test codes.
 
 # Getting started
 ## Prerequisite
-- Install, Python, Node.js, Serverless CLI, AWS CLI
+- Install Python, Node.js, Serverless CLI, AWS CLI
+- log in to AWS cli
 
-## Deploy
+## Deploy & Run
 In `serverless` directory:
+- modify aws region in serverless.yml
 - `sls deploy`
-
-## Test
-In `serverless` directory:
-- `pytest test/{testcode}`
+- check endpoint in aws and send request
 
 
 
