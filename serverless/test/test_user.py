@@ -124,6 +124,14 @@ def test_get_profile(users_table, user1):
     assert ret["body"]["profile"]["following"] == False
 
 
+def test_get_profile2(users_table, user2Token):
+    event2 = {"pathParameters": {"username": "jane doe"}}
+    ret = user.get_profile(event2, {})
+    assert ret["statusCode"] == 200
+    assert ret["body"]["profile"]["username"] == "jane doe"
+    assert ret["body"]["profile"]["following"] == False
+
+
 def test_get_profile_nonexisting(users_table, user1):
     eventbody = {"user": user1}
     event = {"body": eventbody}

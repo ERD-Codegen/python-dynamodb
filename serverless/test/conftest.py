@@ -5,7 +5,7 @@ import pytest
 import sys, os
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-from src import user
+from src import user, article
 
 
 @pytest.fixture
@@ -93,6 +93,35 @@ def articles_table(dynamodb_client):
 
 
 @pytest.fixture
+def comments_table(dynamodb_client):
+    table = dynamodb_client.create_table(
+        TableName="dev-comments",
+        KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+        AttributeDefinitions=[
+            {"AttributeName": "id", "AttributeType": "S"},
+            {"AttributeName": "slug", "AttributeType": "S"},
+            {"AttributeName": "createdAt", "AttributeType": "N"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 1, "WriteCapacityUnits": 1},
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "article",
+                "KeySchema": [
+                    {"AttributeName": "slug", "KeyType": "HASH"},
+                    {"AttributeName": "createdAt", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1,
+                },
+            }
+        ],
+    )
+    yield table
+
+
+@pytest.fixture
 def user1Token(users_table):
     user1 = {
         "username": "john doe",
@@ -116,3 +145,40 @@ def user2Token(users_table):
     event = {"body": eventbody}
     ret = user.create_user(event, {})
     return ret["body"]["user"]["token"]
+
+
+@pytest.fixture
+def article1():
+    return {
+        "title": "title1",
+        "description": "description1",
+        "body": "body1",
+    }
+
+
+@pytest.fixture
+def article2():
+    return {
+        "title": "title2",
+        "description": "description2",
+        "body": "body2",
+    }
+
+
+@pytest.fixture
+def article3():
+    return {
+        "title": "title3",
+        "description": "description3",
+        "body": "body3",
+        "tagList": ["tag1", "tag2"],
+    }
+
+
+@pytest.fixture
+def article1Slug(articles_table, article1, user1Token):
+    eventbody = {"article": article1}
+    headers = {"Authorization": f"Token {user1Token}"}
+    event = {"headers": headers, "body": eventbody}
+    ret = article.create_article(event, {})
+    return ret["body"]["article"]["slug"]

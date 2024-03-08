@@ -6,34 +6,6 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 from src import article, user
 
 
-@pytest.fixture
-def article1():
-    return {
-        "title": "title1",
-        "description": "description1",
-        "body": "body1",
-    }
-
-
-@pytest.fixture
-def article2():
-    return {
-        "title": "title2",
-        "description": "description2",
-        "body": "body2",
-    }
-
-
-@pytest.fixture
-def article3():
-    return {
-        "title": "title3",
-        "description": "description3",
-        "body": "body3",
-        "tagList": ["tag1", "tag2"],
-    }
-
-
 def test_create_article(articles_table, article1, user1Token):
     eventbody = {"article": article1}
     headers = {"Authorization": f"Token {user1Token}"}
