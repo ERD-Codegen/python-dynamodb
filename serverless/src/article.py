@@ -12,7 +12,7 @@ dynamodb = boto3.resource("dynamodb", region_name="ap-northeast-2")
 articles_table = dynamodb.Table("dev-articles")
 
 
-def create_article(event):
+def create_article(event, context):
     authenticatedUser = user.authenticate_and_get_user(event)
     if authenticatedUser is None:
         return envelop("Must be logged in", 422)
@@ -21,19 +21,19 @@ def create_article(event):
     if "article" not in body:
         return envelop("Article must be specified", 422)
 
-    article = body["article"]
+    article_val = body["article"]
     for field in ["title", "description", "body"]:
-        if field not in article:
+        if field not in article_val:
             return envelop(f"{field} must be specified", 422)
 
     timestamp = int(datetime.utcnow().timestamp())
-    slug = slugify(article["title"]) + "-" + str(uuid.uuid4())
+    slug = slugify(article_val["title"]) + "-" + str(uuid.uuid4())[:8]
 
     item = {
         "slug": slug,
-        "title": article["title"],
-        "description": article["description"],
-        "body": article["body"],
+        "title": article_val["title"],
+        "description": article_val["description"],
+        "body": article_val["body"],
         "createdAt": timestamp,
         "updatedAt": timestamp,
         "author": authenticatedUser["username"],
@@ -41,13 +41,13 @@ def create_article(event):
         "favoritesCount": 0,
     }
 
-    if "tagList" in article:
-        item["tagList"] = article["tagList"]
+    if "tagList" in article_val:
+        item["tagList"] = article_val["tagList"]
 
     articles_table.put_item(Item=item)
 
     del item["dummy"]
-    item["tagList"] = article.get("tagList", [])
+    item["tagList"] = article_val.get("tagList", [])
     item["favorited"] = False
     item["favoritesCount"] = 0
     item["author"] = {
@@ -60,7 +60,7 @@ def create_article(event):
     return envelop({"article": item})
 
 
-def get_article(event):
+def get_article(event, context):
     if "slug" not in event["pathParameters"]:
         return envelop("Slug must be specified", 422)
 
@@ -93,7 +93,7 @@ def transform_retrieved_article(article, authenticated_user):
     return article
 
 
-def update_article(event):
+def update_article(event, context):
 
     body = event["body"]
     if "article" not in body:
@@ -134,7 +134,7 @@ def update_article(event):
     )
 
 
-def delete_article(event):
+def delete_article(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Must be logged in", 422)
@@ -153,7 +153,7 @@ def delete_article(event):
     return envelop({})
 
 
-def favorite_article(event):
+def favorite_article(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Must be logged in", 422)
@@ -188,7 +188,7 @@ def favorite_article(event):
     )
 
 
-def list_articles(event):
+def list_articles(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     params = event.get("queryStringParameters", {})
     limit = int(params.get("limit", 20))
@@ -196,8 +196,7 @@ def list_articles(event):
     if sum(item in params for item in ["tag", "author", "favorited"]) > 1:
         return envelop("Use only one of tag, author, or favorited", 422)
     queryParams = {
-        "KeyConditionExpression": "dummy = :dummy",
-        "ExpressionAttributeValues": {":dummy": "partition"},
+        "KeyConditionExpression": Key("dummy").eq("partition"),
         "ScanIndexForward": False,
         "IndexName": "createdAt",
     }
@@ -220,18 +219,17 @@ def list_articles(event):
     )
 
 
-def get_article_by_author(author, authenticated_user):
+def get_article_by_author(author):
     queryParams = {
         "ScanIndexForward": False,
         "IndexName": "author",
-        "keyConditionExpression": "author = :author",
-        "ExpressionAttributeValues": {":author": author},
+        "KeyConditionExpression": Key("author").eq(author),
     }
-    queryResult = articles_table.query(queryParams)
+    queryResult = articles_table.query(**queryParams)
     return queryResult.get("Items", [])
 
 
-def get_feed(event):
+def get_feed(event, context):
     authenticated_user = user.authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Must be logged in", 422)
@@ -239,23 +237,29 @@ def get_feed(event):
     limit = int(event.get("queryStringParameters", {}).get("limit", 20))
     offset = int(event.get("queryStringParameters", {}).get("offset", 0))
     follow_list = user.get_followed_users(authenticated_user["username"])
-
     articles_ret = []
     for username in follow_list:
-        articles_ret.extend(get_article_by_author(username, authenticated_user))
+        articles_ret.extend(get_article_by_author(username))
     articles_ret.sort(key=lambda x: x["createdAt"], reverse=True)
-    return envelop({"articles": articles_ret[offset : offset + limit]})
+    articles_ret = list(
+        map(
+            lambda x: transform_retrieved_article(x, authenticated_user),
+            articles_ret[offset : offset + limit],
+        )
+    )
+    return envelop({"articles": articles_ret})
 
 
-def get_tags(event):
+def get_tags(event, context):
     uniqTags = set()
     scanParam = {
-        AttibutesToGet: ["tagList"],
+        "AttributesToGet": ["tagList"],
     }
     while True:
-        scanResult = articles_table.scan(scanParam)
+        scanResult = articles_table.scan(**scanParam)
         for item in scanResult["Items"]:
-            uniqTags.update(item["tagList"])
+            if "tagList" in item:
+                uniqTags.update(item["tagList"])
         if "LastEvaluatedKey" not in scanResult:
             break
         scanParam["ExclusiveStartKey"] = scanResult["LastEvaluatedKey"]

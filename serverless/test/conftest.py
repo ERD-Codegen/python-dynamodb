@@ -90,3 +90,29 @@ def articles_table(dynamodb_client):
         GlobalSecondaryIndexes=global_secondary_indexes,
     )
     yield table
+
+
+@pytest.fixture
+def user1Token(users_table):
+    user1 = {
+        "username": "john doe",
+        "email": "johndoe@gmail.com",
+        "password": "password123",
+    }
+    eventbody = {"user": user1}
+    event = {"body": eventbody}
+    ret = user.create_user(event, {})
+    return ret["body"]["user"]["token"]
+
+
+@pytest.fixture
+def user2Token(users_table):
+    user1 = {
+        "username": "jane doe",
+        "email": "janedoe@gmail.com",
+        "password": "password111",
+    }
+    eventbody = {"user": user1}
+    event = {"body": eventbody}
+    ret = user.create_user(event, {})
+    return ret["body"]["user"]["token"]

@@ -11,7 +11,7 @@ users_table = dynamodb.Table("dev-users")
 
 
 # create user
-def create_user(event):
+def create_user(event, context):
     body = event["body"]
     # input validation
     if "user" not in body:
@@ -87,7 +87,7 @@ def get_user_by_email(a_email):
 
 
 # login user
-def login_user(event):
+def login_user(event, context):
     body = event["body"]
 
     # input validation
@@ -126,7 +126,7 @@ def login_user(event):
 
 
 # get user
-def get_user(event):
+def get_user(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Token not present or invalid.", 422)
@@ -141,7 +141,7 @@ def get_user(event):
     return envelop({"user": user})
 
 
-def update_user(event):
+def update_user(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if not authenticated_user:
         return envelop("Token not present or invalid.", 422)
@@ -178,7 +178,7 @@ def update_user(event):
     return envelop({"user": updated_user})
 
 
-def get_profile(event):
+def get_profile(event, context):
     username = event["pathParameters"]["username"]
     authenticated_user = authenticate_and_get_user(event)
     profile = get_profile_by_username(username, authenticated_user)
@@ -189,7 +189,7 @@ def get_profile(event):
     return envelop({"profile": profile})
 
 
-def follow(event):
+def follow(event, context):
     authenticated_user = authenticate_and_get_user(event)
     if authenticated_user is None:
         return envelop("Token not present or invalid.", 422)
