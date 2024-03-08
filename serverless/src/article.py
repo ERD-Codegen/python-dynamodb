@@ -76,6 +76,13 @@ def get_article(event, context):
     )
 
 
+def get_article_by_slug(slug):
+    result = articles_table.get_item(Key={"slug": slug})
+    if "Item" not in result:
+        return None
+    return result["Item"]
+
+
 def transform_retrieved_article(article, authenticated_user):
     del article["dummy"]
     article["tagList"] = article.get("tagList", [])
